@@ -7,12 +7,14 @@ import json
 import random
 import requests
 import traceback
-from hashlib import md5
 from flask import abort
 from flask import request
 from flask import redirect
 from flask import Response
 from flask import render_template
+from hashlib import md5
+from datetime import datetime
+from datetime import timedelta
 from importlib import import_module
 
 from kube_shields import app
@@ -63,19 +65,23 @@ def intra_shield(verify=None):
         if verify is None, returns the Intra-shield headers
     """
 
-    def _gen_md5(phrase):
+    def _gen_md5(phrase, timestamp):
         """Returns a md5 hash with the phrase and the shared secret."""
 
         _md5 = md5()
         _md5.update(phrase)
         _md5.update(INTRA_SECRET)
+        _md5.update(timestamp)
         return _md5.hexdigest()
 
+    time_fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
     if verify:
         header = request.headers.get("Intra-Shield")
         if header:
-            phrase, md5_hash = header.split(" ")
-            if _gen_md5(phrase) != md5_hash:
+            phrase, timestamp, md5_hash = header.split(" ")
+            if _gen_md5(phrase, timestamp) != md5_hash or (
+                datetime.utcnow() - datetime.strptime(timestamp, time_fmt)
+            ) > timedelta(seconds=1):
                 abort(403)
         else:
             abort(403)
@@ -83,8 +89,13 @@ def intra_shield(verify=None):
         letters = [chr(x) for x in range(65, 91)] + \
                   [chr(x) for x in range(97, 123)]
         phrase = "".join([random.choice(letters) for _ in range(20)])
+        timestamp = datetime.utcnow().strftime(time_fmt)
         return {
-            "Intra-Shield": "{} {}".format(phrase, _gen_md5(phrase))
+            "Intra-Shield": "{} {} {}".format(
+                phrase,
+                timestamp,
+                _gen_md5(phrase, timestamp),
+            ),
         }
 
 
