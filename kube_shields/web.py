@@ -18,7 +18,6 @@ from datetime import timedelta
 from importlib import import_module
 
 from kube_shields import app
-from kube_shields import cache
 from kube_shields import SITE_NAME
 from kube_shields import INTRA_SECRET
 from kube_shields import OTHER_SHIELDS
@@ -99,7 +98,6 @@ def intra_shield(verify=None):
         }
 
 
-@cache.cached(timeout=60)
 def all_other_services():
     """Determines all other services and checks in all other clusters.
 
@@ -208,7 +206,6 @@ def services_checks(service):
 
 
 @app.route("/services/<service>/", methods=["GET"])
-@cache.cached(timeout=30)
 def get_services_checks(service):
     """Returns a list of checks available for the service."""
 
@@ -221,7 +218,6 @@ def get_services_checks(service):
 
 
 @app.route("/services/", methods=["GET"])
-@cache.cached(timeout=30)
 def get_services():
     """Returns a list of all known services in our cluster."""
 
@@ -231,7 +227,6 @@ def get_services():
 
 
 @app.route("/")
-@cache.cached(timeout=10)
 def get_all_statuses():
     """Main page, lists all services/clusters if master server."""
 

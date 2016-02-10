@@ -44,7 +44,7 @@ setup(
     url="https://github.com/ccpgames/kube_shields/",
     download_url="https://github.com/ccpgames/kube_shields/",
     entry_points={"paste.app_factory": ["main = kube_shields.web:paste"]},
-    install_requires=["Flask>=0.10.0", "flask-cache", "requests>=2.9.0"],
+    install_requires=["Flask>=0.10.0", "requests>=2.9.0"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",

@@ -11,7 +11,7 @@ RUN apt-get install -y python-dev gcc libc-dev libffi-dev libssl-dev linux-heade
 RUN python -c 'import urllib2;print(urllib2.urlopen("https://bootstrap.pypa.io/get-pip.py").read())' | python
 RUN pip install -qU virtualenv
 RUN virtualenv /venv
-RUN /venv/bin/pip install -qU uwsgi PasteDeploy flask flask-cache gcloud redis requests
+RUN /venv/bin/pip install -qU uwsgi PasteDeploy flask requests
 RUN apt-get remove -q -y gcc libc-dev linux-headers-amd64 manpages manpages-dev
 RUN apt-get autoremove -y && apt-get clean autoclean
 
