@@ -1,0 +1,14 @@
+[app:main]
+use = egg:kube_shields
+
+[uwsgi]
+paste = config:%p
+http = 0.0.0.0:8080
+processes = 1
+reload-mercy = 15
+worker-reload-mercy = 15
+max-requests = 1000
+enable-threads = true
+virtualenv = /venv
+threaded-logger = true
+log-format = %(addr) - %(user) [%(ltime)] "%(method) %(uri) %(proto)" %(status) %(size) "%(referer)" "%(uagent)"
