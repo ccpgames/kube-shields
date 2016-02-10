@@ -23,6 +23,7 @@ from kube_shields import INTRA_SECRET
 from kube_shields import OTHER_SHIELDS
 from kube_shields.kubernetes import all_services
 from kube_shields.kubernetes import kube_health
+from kube_shields.kubernetes import check_kube_health
 
 
 def as_redirect_url(label="label", status="status", color="red"):
@@ -129,11 +130,23 @@ def all_other_services():
     return services
 
 
-def do_check(service, check):
-    """Runs the check for the service. Returns a result dictionary."""
+def do_check(service, check, raw=False):
+    """Runs the check for the service.
+
+    Args:
+        service: string service name
+        check: string check name
+        raw: boolean to return raw stats or a result dict
+
+    Returns:
+        a result dictionary or raw stats
+    """
 
     if check == "health":
-        result = kube_health(service)
+        if raw:
+            result = check_kube_health(service)
+        else:
+            result = kube_health(service)
     else:
         try:
             check_func = getattr(
@@ -144,7 +157,7 @@ def do_check(service, check):
             abort(404)
         else:
             result = check_func()
-            if not isinstance(result, dict):
+            if not raw and not isinstance(result, dict):
                 # the checks should return a dict, this is just a failsafe
                 result = {"label": check, "status": result, "color": "orange"}
 
@@ -168,26 +181,96 @@ def service_status(service, check):
     if not OTHER_SHIELDS:
         intra_shield(verify=True)
 
+    raw = request.args.get("raw") is not None
     if service in all_services():
-        return redirect(check_to_redirect(service, check), code=302)
+        if raw:
+            return as_json(do_check(service, check, True))
+        else:
+            return redirect(check_to_redirect(service, check), code=302)
 
     elif OTHER_SHIELDS:
         # Get the result from the other service
         for server, services in all_other_services().items():
             for _service, _ in services.items():
                 if service == _service:
-                    res = requests.get(
-                        "https://{}/_/{}/{}/".format(server, service, check),
-                        headers=intra_shield(),
-                    )
+                    url = "https://{}/_/{}/{}/".format(server, service, check)
+                    if raw:
+                        url = "{}?raw".format(url)
+                    res = requests.get(url, headers=intra_shield())
                     try:
                         res.raise_for_status()
                     except requests.HTTPError as error:
                         abort(error.code)
                     else:
-                        return redirect(res.url, code=302)
+                        if raw:
+                            return as_json(res.json())
+                        else:
+                            return redirect(res.url, code=302)
 
         abort(404)
+
+
+@app.route("/a/<service>/<check>/", methods=["GET"])
+def aggregate_status(service, check):
+    """Aggregate the check on any services starting with service."""
+
+    if not OTHER_SHIELDS:
+        intra_shield(verify=True)
+
+    aggregates = []
+    if OTHER_SHIELDS:
+        for server, services in all_other_services().items():
+            for _service, checks in services.items():
+                if _service.startswith(service) and check in checks:
+                    res = requests.get(
+                        "https://{}/_/{}/{}/?raw".format(
+                            server,
+                            _service,
+                            check,
+                        ),
+                        headers=intra_shield(),
+                    )
+                    try:
+                        res.raise_for_status()
+                    except:
+                        continue
+                    else:
+                        aggregates.append(res.json())
+
+    for _service in all_services():
+        if _service.startswith(service):
+            aggregates.append(do_check(_service, check, raw=True))
+
+    sum_total = {"label": check, "status": None, "color": ""}
+    sum_health = {"ready": 0, "total": 0, "restarts": 0}
+    for aggregate in aggregates:
+        if isinstance(aggregate, dict):
+            this_color = aggregate.get("color")
+            if this_color and sum_total["color"] not in ("red", "yellow"):
+                sum_total["color"] = this_color
+            elif this_color == "red" and sum_total["color"] != "red":
+                sum_total["color"] = this_color
+
+            if check == "health":
+                sum_health["ready"] += aggregate["ready"]
+                sum_health["total"] += aggregate["total"]
+                sum_health["restarts"] += aggregate["restarts"]
+            else:
+                if not sum_total["status"]:
+                    sum_total["status"] = aggregate.get("status", "")
+                else:
+                    sum_total["status"] += aggregate.get("status", "")
+
+    if check == "health":
+        sum_total["status"] = "{ready}/{total} ({restarts} restarts)".format(
+            **sum_health
+        )
+
+        sum_total["color"] = sum_total["color"] or (
+            "green" if sum_health["ready"] == sum_health["total"] else "red"
+        )
+
+    return redirect(as_redirect_url(**sum_total))
 
 
 def services_checks(service):

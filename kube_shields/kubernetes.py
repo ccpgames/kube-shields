@@ -76,8 +76,15 @@ def all_services():
     return list(set(services))
 
 
-def kube_health(service):
-    """Checks the health of a service with the Kube API."""
+def check_kube_health(service):
+    """Checks the health of a service with the Kube API.
+
+    Args:
+        service: string service name to check
+
+    Returns:
+        dictionary with keys: ready, total, restarts, color
+    """
 
     api = KubeAPI()
     ready = 0
@@ -90,7 +97,7 @@ def kube_health(service):
         except KeyError:
             continue
         if pod_name == service:
-            for container in pod["status"]["containerStatuses"]:
+            for container in pod["status"].get("containerStatuses", []):
                 restarts += container["restartCount"]
                 total += 1
                 ready += int(container["ready"])
@@ -108,7 +115,23 @@ def kube_health(service):
                     color = "yellow"
 
     return {
+        "ready": ready,
+        "total": total,
+        "restarts": restarts,
+        "color": color,
+    }
+
+
+def kube_health(service):
+    """Checks the kube health of the service, returns result dict."""
+
+    res = check_kube_health(service)
+    return {
         "label": "health",
-        "status": "{}/{} ({} restarts)".format(ready, total, restarts),
-        "color": color or ("green" if ready else "red"),
+        "status": "{}/{} ({} restarts)".format(
+            res["ready"],
+            res["total"],
+            res["restarts"]
+        ),
+        "color": res["color"] or ("green" if res["ready"] else "red"),
     }
