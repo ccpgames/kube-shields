@@ -20,8 +20,6 @@ class KubeAPI(object):
         """Determines the available api version(s)."""
 
         if not hasattr(KubeAPI, "base_url"):
-            requests.packages.urllib3.disable_warnings()
-
             port = int(os.environ.get("KUBERNETES_SERVICE_PORT", "443"))
             url = "http{}://{}:{}/api/".format(
                 "s" * int(port == 443),
@@ -29,7 +27,11 @@ class KubeAPI(object):
                 port,
             )
 
-            res = requests.get(url, headers=KubeAPI.headers(), verify=False)
+            res = requests.get(
+                url,
+                headers=KubeAPI.headers(),
+                verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            )
             res.raise_for_status()
             KubeAPI.base_url = url + res.json()["versions"][0]
 
@@ -54,7 +56,7 @@ class KubeAPI(object):
         res = requests.get(
             "{}/{}".format(self.base_url, url),
             headers=KubeAPI.headers(),
-            verify=False,
+            verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
         )
         res.raise_for_status()
         return res.json()
