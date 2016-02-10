@@ -244,12 +244,20 @@ def get_all_statuses():
                 all_statuses["local"][service][check] = check_to_redirect(
                     service, check
                 )
+            all_statuses["local"][service] = [
+                (k, all_statuses["local"][service][k])
+                for k in sorted(all_statuses["local"][service])
+            ]
+        all_statuses["local"] = [(k, all_statuses["local"][k])
+                                 for k in sorted(all_statuses["local"])]
 
         # then all other services
         for server, services in all_other_services().items():
             all_statuses[server] = {}
+
             for service, checks in services.items():
                 all_statuses[server][service] = {}
+
                 for check in checks:
                     res = requests.get(
                         "https://{}/_/{}/{}/".format(server, service, check),
@@ -261,6 +269,16 @@ def get_all_statuses():
                         continue
                     else:
                         all_statuses[server][service][check] = res.url
+
+                all_statuses[server][service] = [
+                    (k, all_statuses[server][service][k])
+                    for k in sorted(all_statuses[server][service])
+                ]
+
+            all_statuses[server] = [(k, all_statuses[server][k])
+                                    for k in sorted(all_statuses[server])]
+
+        all_statuses = [(k, all_statuses[k]) for k in sorted(all_statuses)]
 
         return render_template(
             "index.html",

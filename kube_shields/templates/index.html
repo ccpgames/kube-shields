@@ -6,13 +6,13 @@
 <body>
  <h1><a href="/">{{ site_name }}</a></h1>
  <hr />
- {%- for server, services in all_statuses.items() %}
+ {%- for server, services in all_statuses %}
  <div class="cluster">
   <ul>
-  {%- for service, checks in services.items() %}
+  {%- for service, checks in services %}
    <li>
     <p>{{ service }}
-     {%- for check, url in checks.items() %}
+     {%- for check, url in checks %}
      <a href="/_/{{ service }}/{{ check }}/" title="https://{{ site_name }}/_/{{ service }}/{{ check }}/"><img src="{{ url }}" alt="{{ service }} {{ check }} shield" /></a>
      {%- endfor %}
     </p>
@@ -64,6 +64,9 @@ img{
 img:after{
   content: '\A';
   white-space: pre;
+}
+div.cluster{
+  padding-bottom: 2em;
 }
 </style>
 </body>

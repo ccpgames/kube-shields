@@ -21,9 +21,8 @@ class KubeAPI(object):
 
         if not hasattr(KubeAPI, "base_url"):
             port = int(os.environ.get("KUBERNETES_SERVICE_PORT", "443"))
-            url = "http{}://{}:{}/api/".format(
+            url = "http{}://kubernetes:{}/api/".format(
                 "s" * int(port == 443),
-                os.environ.get("KUBERNETES_SERVICE_HOST", "localhost"),
                 port,
             )
 
