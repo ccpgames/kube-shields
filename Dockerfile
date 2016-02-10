@@ -30,6 +30,8 @@ ADD config /config
 EXPOSE 8080
 WORKDIR /
 
-ENV REMOTE_KUBE_SHIELDS=""
+ENV OTHER_SHIELDS=""
+ENV SHIELD_SITE_NAME="shields.local"
+ENV INTRA_SECRET="/app/MANIFEST.in"
 
 CMD /venv/bin/uwsgi --ini-paste /config
