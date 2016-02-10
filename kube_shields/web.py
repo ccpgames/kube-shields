@@ -107,6 +107,9 @@ def all_other_services():
 
     services = {}
     for shield in OTHER_SHIELDS:
+        if shield == "None":
+            continue  # allows single cluster public use
+
         res = requests.get(
             "https://{}/services/".format(shield),
             headers=intra_shield(),
@@ -262,8 +265,11 @@ def aggregate_status(service, check):
                     sum_total["status"] += aggregate.get("status", "")
 
     if check == "health":
-        sum_total["status"] = "{ready}/{total} ({restarts} restarts)".format(
-            **sum_health
+        sum_total["status"] = "{}/{} ({} restart{})".format(
+            sum_health["ready"],
+            sum_health["total"],
+            sum_health["restarts"],
+            "s" * int(sum_health["restarts"] != 1)
         )
 
         sum_total["color"] = sum_total["color"] or (

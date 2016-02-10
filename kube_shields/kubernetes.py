@@ -128,10 +128,11 @@ def kube_health(service):
     res = check_kube_health(service)
     return {
         "label": "health",
-        "status": "{}/{} ({} restarts)".format(
+        "status": "{}/{} ({} restart{})".format(
             res["ready"],
             res["total"],
-            res["restarts"]
+            res["restarts"],
+            "s" * int(res["restarts"] != 1),
         ),
         "color": res["color"] or ("green" if res["ready"] else "red"),
     }
