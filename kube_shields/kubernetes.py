@@ -29,7 +29,9 @@ class KubeAPI(object):
             res = requests.get(
                 url,
                 headers=KubeAPI.headers(),
-                verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+                verify=str(
+                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                ),
             )
             res.raise_for_status()
             KubeAPI.base_url = url + res.json()["versions"][0]
@@ -62,7 +64,7 @@ class KubeAPI(object):
 
 
 def all_services():
-    """Returns a list of all services in our cluster."""
+    """Returns a list of all services (unique pod names) in our cluster."""
 
     api = KubeAPI()
     services = []
@@ -123,7 +125,7 @@ def check_kube_health(service):
 
 
 def kube_health(service):
-    """Checks the kube health of the service, returns result dict."""
+    """Checks the kube health of the service, returns a result dict."""
 
     res = check_kube_health(service)
     return {
