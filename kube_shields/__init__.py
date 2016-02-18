@@ -7,7 +7,7 @@ from flask import Flask
 
 __author__ = "Adam Talsma"
 __author_email__ = "se-adam.talsma@ccpgames.com"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 app = Flask(__name__)
