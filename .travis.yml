@@ -5,7 +5,7 @@ before_install:
 - pip install -U pip setuptools wheel
 notifications:
   slack:
-    secure: ""
+    secure: "QR4JXRly4Z2DZilwJiREzbcL9VMdNq/JZ1MKToxhW06+QN9fl4yxexagT5QHyAN6sEPaHYRyyMaVZuMXFfH/pcSiD8MU88teZ2ppFl7XH1XoWcmcx9pG3rxYNjcjLWk/Eb1P/LtEpXulwLQ8T9vsa9aOma1bAkeG6W6GRhImynHIaq5R+EIxZHGYVy/XEWj0iATIDR1thd+PjCkN1wxe4F1NqCPv8rdFwvSzLk/weSb0bSUOPmclkClzer/uGVxI5qgDP57ItP3X5COHWzlJwhEUYhiASrvZRBqWazSchEe7SKwFFW0HFeVMW9GgkHZr+6i2JTl0GAqMCcs9sLdGc1TqbE8cviPiB2jCTZNHYn9bxpfDoY6MzmSNZuYCwDVFMi6mNRe4R9dSdB/FpGeV7p0dIuNLARX+7A6sKtwYAbqHPmcohSgeTVpKoLql2RhnstgJpK+lcB+rHczZFSoztrkY7qjvdApgC9GpERPfYKGgSQWU1IGOgqMN/epDjs/C0i6kevwu4yQM9HjKCp+gOFv5eQ625a6ycgdrW6NR1vjSbraLggfAcAulQqCCBzT1YObeZi5+uH0cZ29eYDjs/bsVgytIzbC73/sCrFAQmN3BCrU1E8OK40bjNGzPbq1Qukf6j3f7KKaT/N1YV7prRppdBT5/MY4j24FitUOSHtQ="
 before_deploy:
 - python setup.py build sdist bdist_wheel
 - if [ "x" == "$(grep $(git tag -l --points-at=HEAD) kube_shields/__init__.py)x" ]; then echo 'new tag does not exist in __init__.py; bailing!'; exit 1; else echo "tag found in __init__.py"; fi
@@ -15,13 +15,13 @@ deploy:
     skip_cleanup: true
     distributions: "sdist bdist_wheel"
     password:
-      secure: ""
+      secure: "zXrt8/0p0CiGKOc13sb/vhGtx5YrqRMaMTTuXhOARbmzNdITS+3BRB/pPjOEeJcmGAeZXHL+xr3CjO68YdKTzqE0DAMpMM7W0xXBPUamafwgU3xXLOpjcH5UzOs0Rfea8BdnRqB6O6edCy3nIPjFlZSo3HMTbpzsgUxq+jTpJK13Fs712XfbbciFKW0cIlBpiK9cRJQVeTLQjOM/1JWFHh7Qlbo8RogsZ4OXEEKKnooVqM13UwUEBkN2sRwp8OQFAizFlX7tg1hZuC6PFA4yOLUpyUzcHKTcOIudln3DVb2dyWx0qTksyLvjTypVKNyXpdJb4J8zLr9Lwin659EdluMMXagwLshZVZoEo9qRD14rcIcVQKECdi5iTsqOAoy8BmJGXfABmZ8DEz6qih/EGiS2e3alW0MtdnThi4eV3FBvArky+KYl73JwCQ4H9hpoqlvpTELHRGo+1C5D+9tFY5NSzwFSU/UqfyZ/rLKIqhvt6NBwkQVV0L8R8H+4vXdGlfrbJfrtDrgs/bi7+J4ArllExob2uzJYXnK5hlISLycdY8hMbs+E8l31oX4rhz0IOhMTCr7JHxqeuNRoLk4qAKhTc83dRRAEEvAY6XjXfS8lZNc2uHukk5caO1VHqoIUWylnYYRMSzusQxvvPjNFBVvwnfenlU1cPjljCFzJ4Vs="
     on:
       tags: true
       repo: ccpgames/kube-shields
   - provider: releases
     api_key:
-      secure: ""
+      secure: "nvnWTZibglac0eKL9Cl3fdzWpvxe8mb6vRX9IJRBWluvQ9wH+23dywgNT87eEHcko9wrGCaboYLI0zDLLj0/yAEY0Y5Ziv5ajjlC7XeL3T15rZhfDSbUHpaQNEgMcoZEmAzkndn5pxmiiClwa+qx0q82P60mKtazv4WAwiGOGi/qa7AiMFA9E/5BfSsEh+ew+Hny8+KOncFzReEBAls34jiPIST8y6U8gmXCicKcfAdHyF0gDELm20iZuWIOz1gN5ISTh4YWN0iJFunQV1W2a4a2JkcaqL2iR4pB4FKcZqEbQ2tNO/R6vx1aULPUn6pK8p9QHpo7O+24/t0c6rikAJKAd75gQMfoBIIha/zcnZkPoQDHaq+iAvB46juaTqSPJ7svO2TZ3ZzSdFQvsok4wCJpUrs1ZpRgsaF6sM4j5jOhI6lyxYuvB4zT92FQoOf3Y8T+Kd/RJJ6LgXtU4jvNF5ytblzFXtsWm7m3ijcL2xEfHlBHoWTjjBc3PrU6NzJR/elaZNmjnuyU00vxlT2SnpO0cBnQ7yjBhtefZDr+YOnq7rYuFAr0baCH+OPCzfgD/fSNyGH1Tfbh69PGF70Jys+GPHXlpi0+u6OuyBWgJVlM9tP6D2CkzDJosxPA3Hsi9aOssgjh66j3+Xhc4oLgipzpoqHT6h2/IU0i5Zfv47k="
     file: "/home/travis/build/ccpgames/kube-shields/dist/*.whl"
     file_glob: true
     skip_cleanup: true
