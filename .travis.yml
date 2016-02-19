@@ -1,0 +1,29 @@
+language: python
+python:
+- "3.5"
+before_install:
+- pip install -U pip setuptools wheel
+notifications:
+  slack:
+    secure: ""
+before_deploy:
+- python setup.py build sdist bdist_wheel
+- if [ "x" == "$(grep $(git tag -l --points-at=HEAD) kube_shields/__init__.py)x" ]; then echo 'new tag does not exist in __init__.py; bailing!'; exit 1; else echo "tag found in __init__.py"; fi
+deploy:
+  - provider: pypi
+    user: atal
+    skip_cleanup: true
+    distributions: "sdist bdist_wheel"
+    password:
+      secure: ""
+    on:
+      tags: true
+      repo: ccpgames/kube-shields
+  - provider: releases
+    api_key:
+      secure: ""
+    file: "/home/travis/build/ccpgames/kube-shields/dist/*.whl"
+    file_glob: true
+    skip_cleanup: true
+    on:
+      tags: true

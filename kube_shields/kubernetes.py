@@ -8,6 +8,9 @@ import os
 import requests
 from datetime import datetime
 
+# standard location for gke containers
+CACRT = str("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+
 
 class KubeAPI(object):
     """Stores the automatically injected kube API token."""
@@ -26,13 +29,7 @@ class KubeAPI(object):
                 port,
             )
 
-            res = requests.get(
-                url,
-                headers=KubeAPI.headers(),
-                verify=str(
-                    "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-                ),
-            )
+            res = requests.get(url, headers=KubeAPI.headers(), verify=CACRT)
             res.raise_for_status()
             KubeAPI.base_url = url + res.json()["versions"][0]
 
@@ -57,7 +54,7 @@ class KubeAPI(object):
         res = requests.get(
             "{}/{}".format(self.base_url, url),
             headers=KubeAPI.headers(),
-            verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+            verify=CACRT,
         )
         res.raise_for_status()
         return res.json()
