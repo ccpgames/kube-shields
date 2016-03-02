@@ -5,17 +5,19 @@ import os
 import sys
 import json
 import random
-import requests
 import traceback
+from hashlib import md5
+from datetime import datetime
+from datetime import timedelta
+from collections import OrderedDict
+from importlib import import_module
+
+import requests
 from flask import abort
 from flask import request
 from flask import redirect
 from flask import Response
 from flask import render_template
-from hashlib import md5
-from datetime import datetime
-from datetime import timedelta
-from importlib import import_module
 
 from kube_shields import app
 from kube_shields import SITE_NAME
@@ -118,7 +120,7 @@ def all_other_services():
             res.raise_for_status()
         except:
             continue
-        services[shield] = {}
+        services[shield] = OrderedDict()
         for srv in res.json():
             res = requests.get(
                 "https://{}/services/{}/".format(shield, srv),
