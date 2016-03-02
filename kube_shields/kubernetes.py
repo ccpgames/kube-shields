@@ -72,7 +72,7 @@ def all_services():
             services.append(pod["metadata"]["generateName"][:-1])
         except KeyError:
             pass
-    return list(set(services))
+    return sorted(set(services))
 
 
 def check_kube_health(service):

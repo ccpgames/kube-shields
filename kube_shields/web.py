@@ -320,57 +320,74 @@ def get_all_statuses():
     """Main page, lists all services/clusters if master server."""
 
     if OTHER_SHIELDS:
-        all_statuses = {"local": {}}
-        # first do our own services
-        for service in all_services():
-            all_statuses["local"][service] = {}
-            for check in services_checks(service):
-                all_statuses["local"][service][check] = check_to_redirect(
-                    service, check
-                )
-            all_statuses["local"][service] = [
-                (k, all_statuses["local"][service][k])
-                for k in sorted(all_statuses["local"][service])
-            ]
-        all_statuses["local"] = [(k, all_statuses["local"][k])
-                                 for k in sorted(all_statuses["local"])]
-
-        # then all other services
-        for server, services in all_other_services().items():
-            all_statuses[server] = {}
-
-            for service, checks in services.items():
-                all_statuses[server][service] = {}
-
-                for check in checks:
-                    res = requests.get(
-                        "https://{}/_/{}/{}/".format(server, service, check),
-                        headers=intra_shield(),
-                    )
-                    try:
-                        res.raise_for_status()
-                    except:
-                        continue
-                    else:
-                        all_statuses[server][service][check] = res.url
-
-                all_statuses[server][service] = [
-                    (k, all_statuses[server][service][k])
-                    for k in sorted(all_statuses[server][service])
-                ]
-
-            all_statuses[server] = [(k, all_statuses[server][k])
-                                    for k in sorted(all_statuses[server])]
-
-        all_statuses = [(k, all_statuses[k]) for k in sorted(all_statuses)]
-
-        return render_template(
-            "index.html",
-            all_statuses=all_statuses,
-            site_name=SITE_NAME,
-        )
+        return render_template("index.html", site_name=SITE_NAME)
     else:
         abort(404)
+
+
+@app.route("/shields")
+def shields_stream():
+    """Streams shield check results if master server."""
+
+    if OTHER_SHIELDS:
+        return Response(stream_all_shields(), mimetype="text/event-stream")
+    else:
+        abort(404)
+
+
+def stream_all_shields():
+    """Iterator to async deliver shield results."""
+
+    def shield(service, check, url):
+        return (
+            '<a href="/_/{service}/{check}/" title="https://{site_name}/_/'
+            '{service}/{check}/"><img src="{url}" alt="{service} {check} '
+            'shield" /></a>'
+        ).format(
+            service=service,
+            check=check,
+            site_name=SITE_NAME,
+            url=url,
+        )
+
+    def stream(data):
+        return "data: {}\n\n".format(data)
+
+    # first do our own services
+    for service in all_services():
+        data = '<li><p>{}'.format(service)
+        for check in services_checks(service):
+            data += shield(service, check, check_to_redirect(service, check))
+
+        data += '</p></li>'
+        yield stream(data)
+
+    data = '<div class="spacer"></div>'
+
+    # then all other services
+    for server, services in all_other_services().items():
+        for service, checks in services.items():
+            data += '<li><p>{}'.format(service)
+
+            for check in checks:
+                res = requests.get(
+                    "https://{}/_/{}/{}/".format(server, service, check),
+                    headers=intra_shield(),
+                )
+                try:
+                    res.raise_for_status()
+                except:
+                    continue
+                else:
+                    data += shield(service, check, res.url)
+
+            data += '</p></li>'
+            yield stream(data)
+            data = ''
+
+        data += '<div class="spacer"></div>'
+
+    yield stream(data + "<!-- STREAM_COMPLETE -->")
 
 
 def traceback_formatter(excpt, value, tback):
@@ -404,6 +421,7 @@ def main():
         port=8080,
         debug=True,
         use_reloader=False,
+        threaded=True,
     )
 
 
