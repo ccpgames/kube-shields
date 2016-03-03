@@ -5,8 +5,10 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import os
-import requests
 from datetime import datetime
+
+import requests
+
 
 # standard location for gke containers
 CACRT = str("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
@@ -63,8 +65,11 @@ class KubeAPI(object):
 def all_services():
     """Returns a list of all services (unique pod names) in our cluster."""
 
-    api = KubeAPI()
     services = []
+    if not os.path.isfile(CACRT):
+        return services  # not running inside kube, no kube services
+
+    api = KubeAPI()
     for pod in api.get("pods")["items"]:
         if pod["metadata"]["namespace"] == "kube-system":
             continue

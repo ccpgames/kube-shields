@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import random
+import pkgutil
 import traceback
 from hashlib import md5
 from datetime import datetime
@@ -20,6 +21,7 @@ from flask import Response
 from flask import render_template
 
 from kube_shields import app
+from kube_shields import snowflakes
 from kube_shields import SITE_NAME
 from kube_shields import INTRA_SECRET
 from kube_shields import OTHER_SHIELDS
@@ -28,7 +30,7 @@ from kube_shields.kubernetes import kube_health
 from kube_shields.kubernetes import check_kube_health
 
 
-def as_redirect_url(label="label", status="status", color="red"):
+def as_redirect_url(label="label", status="status", color="red", **_):
     """All status checks should be returning these arguments.
 
     Returns a string url to img.shields.io suitable for the check result.
@@ -42,7 +44,7 @@ def as_redirect_url(label="label", status="status", color="red"):
 
     return "https://img.shields.io/badge/{}-{}-{}.svg".format(
         _clean(label),
-        _clean(status),
+        _clean(str(status)),
         color,
     )
 
@@ -135,6 +137,18 @@ def all_other_services():
     return services
 
 
+def all_snowflakes():
+    """Returns a list of all custom snowflakes installed."""
+
+    return [mod[1] for mod in pkgutil.iter_modules(snowflakes.__path__)]
+
+
+def all_services_and_snowflakes():
+    """Returns a sorted combined list of all services and snowflakes."""
+
+    return sorted(set(all_services() + all_snowflakes()))
+
+
 def do_check(service, check, raw=False):
     """Runs the check for the service.
 
@@ -155,16 +169,20 @@ def do_check(service, check, raw=False):
     else:
         try:
             check_func = getattr(
-                import_module("kube_config.snowflakes.{}".format(service)),
+                import_module("kube_shields.snowflakes.{}".format(service)),
                 check,
             )
         except (ImportError, AttributeError):
             abort(404)
         else:
             result = check_func()
-            if not raw and not isinstance(result, dict):
+            if not isinstance(result, dict):
                 # the checks should return a dict, this is just a failsafe
-                result = {"label": check, "status": result, "color": "orange"}
+                result = {"status": result}
+            # these should be the keys returned, this sets the defaults
+            result["label"] = result.get("label", check)
+            result["color"] = result.get("color", "orange")
+            result["status"] = result.get("status", "misconfigured")
 
     return result
 
@@ -187,7 +205,7 @@ def service_status(service, check):
         intra_shield(verify=True)
 
     raw = request.args.get("raw") is not None
-    if service in all_services():
+    if service in all_services() + all_snowflakes():
         if raw:
             return as_json(do_check(service, check, True))
         else:
@@ -242,11 +260,11 @@ def aggregate_status(service, check):
                     else:
                         aggregates.append(res.json())
 
-    for _service in all_services():
+    for _service in all_services_and_snowflakes():
         if _service.startswith(service):
             aggregates.append(do_check(_service, check, raw=True))
 
-    sum_total = {"label": check, "status": None, "color": ""}
+    sum_total = {"label": check, "status": None, "color": "orange"}
     sum_health = {"ready": 0, "total": 0, "restarts": 0}
     for aggregate in aggregates:
         if isinstance(aggregate, dict):
@@ -284,14 +302,20 @@ def aggregate_status(service, check):
 def services_checks(service):
     """Determine the list of checks for a service."""
 
-    checks = ["health"]
+    checks = []
+
+    if service in all_services():
+        # the service was found via kube, can provide automatic checks
+        checks.append("health")
 
     try:
-        mod = import_module("kube_config.snowflakes.{}".format(service))
+        mod = import_module("kube_shields.snowflakes.{}".format(service))
     except ImportError:
-        pass
+        pass  # no additional checks
     else:
-        checks.extend([f for f in dir(mod) if not f.startswith("_")])
+        for func in [f for f in dir(mod) if not f.startswith("_")]:
+            if getattr(getattr(mod, func), "__snowflake__", False) is True:
+                checks.append(func)
 
     return checks
 
@@ -300,9 +324,10 @@ def services_checks(service):
 def get_services_checks(service):
     """Returns a list of checks available for the service."""
 
-    intra_shield(verify=True)
+    if not OTHER_SHIELDS:
+        intra_shield(verify=True)
 
-    if service in all_services():
+    if service in all_services() + all_snowflakes():
         return as_json(services_checks(service))
     else:
         abort(404)
@@ -312,9 +337,10 @@ def get_services_checks(service):
 def get_services():
     """Returns a list of all known services in our cluster."""
 
-    intra_shield(verify=True)
+    if not OTHER_SHIELDS:
+        intra_shield(verify=True)
 
-    return as_json(all_services())
+    return as_json(all_services_and_snowflakes())
 
 
 @app.route("/")
@@ -356,7 +382,7 @@ def stream_all_shields():
         return "data: {}\n\n".format(data)
 
     # first do our own services
-    for service in all_services():
+    for service in sorted(all_services_and_snowflakes()):
         data = '<li><p>{}'.format(service)
         for check in services_checks(service):
             data += shield(service, check, check_to_redirect(service, check))
@@ -364,10 +390,9 @@ def stream_all_shields():
         data += '</p></li>'
         yield stream(data)
 
-    data = '<div class="spacer"></div>'
-
     # then all other services
     for server, services in all_other_services().items():
+        data = '<div class="spacer"></div>'
         for service, checks in services.items():
             data += '<li><p>{}'.format(service)
 
@@ -387,9 +412,7 @@ def stream_all_shields():
             yield stream(data)
             data = ''
 
-        data += '<div class="spacer"></div>'
-
-    yield stream(data + "<!-- STREAM_COMPLETE -->")
+    yield stream("<!-- STREAM_COMPLETE -->")
 
 
 def traceback_formatter(excpt, value, tback):

@@ -2,12 +2,14 @@
 
 
 import os
+from functools import wraps
+
 from flask import Flask
 
 
 __author__ = "Adam Talsma"
 __author_email__ = "se-adam.talsma@ccpgames.com"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 
 app = Flask(__name__)
@@ -20,3 +22,18 @@ try:
         INTRA_SECRET = openkey.read().strip()
 except:
     INTRA_SECRET = "not secret"
+
+
+def snowflake(func):
+    """Sets the __snowflake__ attribute on the func.
+
+    Used to export a health check function in your snowflake module.
+    """
+
+    func.__snowflake__ = True
+
+    @wraps(func)
+    def _snowflake(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return _snowflake
