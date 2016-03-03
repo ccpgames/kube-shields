@@ -5,9 +5,8 @@ create python files here, the names of which become the service name. The
 name doesn't nessesarily have to line up with an actual service in kubernetes,
 you can create meta or logical service checks here as well.
 
-So each python file is a service, and in each file, and functions that are
-wrapped with the `snowflake` helper function provided by kube_shields will
-be detected and the function names themselves become the check name.
+So each python file is a service, and in each file functions that are wrapped
+with the `snowflake` helper function provided by kube_shields are exposed.
 
 An example snowflake check for the route `/_/webapp/hits/`:
 
