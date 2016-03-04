@@ -94,7 +94,7 @@ def check_kube_health(service):
     ready = 0
     total = 0
     restarts = 0
-    color = False
+    color = "green"
     for pod in api.get("pods")["items"]:
         try:
             pod_name = pod["metadata"]["generateName"][:-1]
@@ -115,7 +115,7 @@ def check_kube_health(service):
             if ready != total:
                 color = "red"
             elif restarts / days > ((days / 2) / days):
-                if not color:  # red takes priority
+                if color != "red":  # red takes priority
                     color = "yellow"
 
     return {

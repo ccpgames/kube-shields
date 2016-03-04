@@ -271,7 +271,7 @@ def aggregate_status(service, check):
             this_color = aggregate.get("color")
             if this_color and sum_total["color"] not in ("red", "yellow"):
                 sum_total["color"] = this_color
-            elif this_color == "red" and sum_total["color"] != "red":
+            elif this_color == "red":
                 sum_total["color"] = this_color
 
             if check == "health":
@@ -290,10 +290,6 @@ def aggregate_status(service, check):
             sum_health["total"],
             sum_health["restarts"],
             "s" * int(sum_health["restarts"] != 1)
-        )
-
-        sum_total["color"] = sum_total["color"] or (
-            "green" if sum_health["ready"] == sum_health["total"] else "red"
         )
 
     return redirect(as_redirect_url(**sum_total))
