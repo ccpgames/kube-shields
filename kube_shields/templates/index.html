@@ -31,7 +31,7 @@
  }
  p{
    margin: 0;
-   padding: 0.1em;
+   padding: 0;
  }
  hr{
    border-color: #ccc;
@@ -41,19 +41,20 @@
    list-style-type: none;
    margin: 0 auto;
    padding: 0;
-   width: 40%;
+   width: 60%;
  }
  li{
    font: 200 18px/1.4 Helvetica, Verdana, sans-serif;
    border-bottom: 1px solid #ccc;
+   display: inline-block;
+   width: 100%;
+ }
+ li:last-child{
+   border: None;
  }
  img{
    float: right;
-   clear: both;
- }
- img:after{
-   content: '\A';
-   white-space: pre;
+   padding: 0.115em 0 0.1em 0.1em;
  }
  div.spacer{
    padding-bottom: 2em;
