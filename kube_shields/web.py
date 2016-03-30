@@ -82,12 +82,22 @@ def intra_shield(verify=None):
     if verify:
         header = request.headers.get("Intra-Shield")
         if header:
-            phrase, timestamp, md5_hash = header.split(" ")
-            if _gen_md5(phrase, timestamp) != md5_hash or (
-                datetime.utcnow() - datetime.strptime(timestamp, time_fmt)
-            ) > timedelta(seconds=1):
+            try:
+                phrase, timestamp, md5_hash = header.split(" ")
+            except ValueError:
+                app.logger.warning("malformed Intra-Shield header")
+                abort(403)
+
+            if _gen_md5(phrase, timestamp) != md5_hash:
+                app.logger.warning("Intra-Shield hash mismatch")
+                abort(403)
+
+            drift = datetime.utcnow() - datetime.strptime(timestamp, time_fmt)
+            if drift > timedelta(seconds=10):
+                app.logger.warning("time drift over %d seconds", drift.seconds)
                 abort(403)
         else:
+            app.logger.warning("missing Intra-Shield header")
             abort(403)
     else:
         letters = [chr(x) for x in range(65, 91)] + \
@@ -440,7 +450,7 @@ def main():
     paste().run(
         host="0.0.0.0",
         port=8080,
-        debug=True,
+        debug=bool(os.environ.get("DEBUG_SHIELDS")),
         use_reloader=False,
         threaded=True,
     )
