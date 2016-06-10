@@ -9,7 +9,7 @@ from flask import Flask
 
 __author__ = "Adam Talsma"
 __author_email__ = "se-adam.talsma@ccpgames.com"
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 
 app = Flask(__name__)
