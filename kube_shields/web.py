@@ -369,6 +369,13 @@ def shields_stream():
         abort(404)
 
 
+@app.route("/ping")
+def ping():
+    """Basic health check for kube readiness probes."""
+
+    return Response("PONG", 200)
+
+
 def stream_all_shields():
     """Iterator to async deliver shield results."""
 
